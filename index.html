@@ -85,7 +85,7 @@
   .nav-btn.active { color: var(--azul); border-bottom-color: var(--dourado); }
 
   /* ===== LAYOUT ===== */
-  .conteudo { max-width: 620px; margin: 0 auto; padding: 16px 14px 90px; }
+  .conteudo { max-width: 620px; margin: 0 auto; padding: 16px 14px 100px; }
   .painel { display: none; }
   .painel.active { display: block; animation: entra 0.2s ease; }
   @keyframes entra { from { opacity: 0; } to { opacity: 1; } }
@@ -159,11 +159,15 @@
   .btn-bloco { width: 100%; }
   .btn-pequeno { padding: 8px 12px; font-size: 12.5px; min-height: 38px; border-radius: 7px; }
 
-  /* Barra de navegação fixa do wizard */
+  /* Barra de navegação fixa do wizard: ocupa a largura toda só até o breakpoint;
+     acima disso, fica contida e centralizada como o resto do conteúdo. */
   .wizard-nav {
     position: fixed; left: 0; right: 0; bottom: 0; background: var(--superficie);
-    border-top: 1px solid var(--borda); padding: 10px 14px; display: flex; gap: 10px;
-    box-shadow: 0 -4px 16px rgba(0,0,0,0.06); z-index: 30;
+    border-top: 1px solid var(--borda); padding: 10px 14px; z-index: 30;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+  }
+  .wizard-nav-interno {
+    max-width: 620px; margin: 0 auto; display: flex; gap: 10px;
   }
   .wizard-nav .btn { flex: 1; }
 
@@ -264,16 +268,19 @@
   }
   @keyframes girar { to { transform: rotate(360deg); } }
 
-  /* ===== RODAPÉ COM MARCAS ===== */
+  /* ===== RODAPÉ COM MARCAS =====
+     padding-bottom extra no celular: a barra fixa do wizard (~64px) não pode
+     cobrir o rodapé; body.wizard-visivel é alternado via JS conforme a tela ativa. */
   .rodape {
     background: var(--superficie); border-top: 1px solid var(--borda);
     padding: 22px 16px; text-align: center; margin-top: 30px;
   }
+  body.wizard-visivel .rodape { padding-bottom: 86px; }
   .rodape-marcas {
-    display: flex; align-items: center; justify-content: center; gap: 22px; flex-wrap: wrap; margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 12px;
   }
-  .rodape-marcas img { height: 30px; width: auto; opacity: 0.9; }
-  .rodape-texto { font-size: 11.5px; color: var(--texto-suave); }
+  .rodape-marcas img { height: 34px; width: auto; opacity: 0.92; }
+  .rodape-texto { font-size: 12px; color: var(--texto-suave); }
 
   /* Aviso de configuração pendente */
   .aviso-config {
@@ -282,10 +289,36 @@
   }
   .aviso-config code { background: #fff; padding: 2px 5px; border-radius: 4px; font-size: 12.5px; border: 1px solid #f0d98a; }
 
-  /* Telas maiores: um pouco mais de respiro, sem mudar a lógica mobile-first */
+  /* Telas maiores: a interface é pensada primeiro para celular, mas em
+     computador os elementos (logo, textos, espaçamentos) crescem para
+     ocupar o espaço disponível com proporção adequada — sem virar um
+     layout largo e vazio, nem ficar com cara de site mobile esticado. */
   @media (min-width: 640px) {
-    .conteudo { padding: 24px 20px 40px; }
-    .wizard-nav { position: static; box-shadow: none; border-top: none; padding: 18px 0 0; }
+    .topo { padding: 16px 24px; }
+    .topo-marca img { height: 42px; }
+    .topo-marca .titulo-app { font-size: 15px; }
+
+    .conteudo { max-width: 700px; padding: 28px 24px 48px; }
+
+    /* A barra de ações do wizard deixa de ser fixa/full-width e passa a
+       fazer parte do fluxo normal da página, alinhada com o cartão acima. */
+    .wizard-nav { position: static; box-shadow: none; border-top: none; padding: 20px 0 0; }
+    body.wizard-visivel .rodape { padding-bottom: 22px; }
+
+    .cartao { padding: 24px 26px; }
+    .titulo-secao { font-size: 22px; }
+
+    .rodape { padding: 30px 24px; }
+    .rodape-marcas img { height: 38px; }
+  }
+
+  /* Telas grandes (desktop "de verdade"): mais respiro ainda, mantendo
+     tudo centralizado — o conteúdo nunca se estica a ponto de ficar
+     desproporcional em monitores largos. */
+  @media (min-width: 1024px) {
+    .topo-marca img { height: 46px; }
+    .conteudo { max-width: 760px; padding: 40px 24px 56px; }
+    .rodape-marcas img { height: 42px; }
   }
 </style>
 </head>
@@ -509,8 +542,10 @@
 
   <!-- Barra fixa de navegação do wizard (apenas na tela de submissão) -->
   <div class="wizard-nav" id="wizard-nav">
-    <button class="btn btn-secundario" id="btn-etapa-anterior" type="button">Voltar</button>
-    <button class="btn btn-primario" id="btn-etapa-proxima" type="button">Continuar</button>
+    <div class="wizard-nav-interno">
+      <button class="btn btn-secundario" id="btn-etapa-anterior" type="button">Voltar</button>
+      <button class="btn btn-primario" id="btn-etapa-proxima" type="button">Continuar</button>
+    </div>
   </div>
 
   <div class="modal-fundo" id="modal-detalhes">
@@ -566,6 +601,7 @@ document.addEventListener('DOMContentLoaded', function () {
   inicializarLogin();
   inicializarAdmin();
   inicializarModal();
+  document.body.classList.add('wizard-visivel'); // tela inicial é a de submissão
 
   const senhaSalva = sessionStorage.getItem(CHAVE_SESSAO_SENHA);
   if (senhaSalva) { Estado.senhaAdmin = senhaSalva; ativarModoAdmin(); }
@@ -605,7 +641,9 @@ function irParaTela(idTela) {
   document.querySelectorAll('#conteudo-principal > .painel').forEach(function (p) {
     p.classList.toggle('active', p.id === idTela);
   });
-  document.getElementById('wizard-nav').style.display = (idTela === 'tela-submissao') ? 'flex' : 'none';
+  const wizardVisivel = (idTela === 'tela-submissao');
+  document.getElementById('wizard-nav').style.display = wizardVisivel ? 'block' : 'none';
+  document.body.classList.toggle('wizard-visivel', wizardVisivel);
   if (idTela === 'tela-admin' && Estado.senhaAdmin) carregarSubmissoes();
 }
 
